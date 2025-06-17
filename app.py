@@ -194,5 +194,8 @@ def handle_force_stop_broadcast():
     print("Status siaran di server direset.")
 
 
+# if __name__ == '__main__':
+#     socketio.run(app, debug=True, port=5000, allow_unsafe_werkzeug=True)
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=5000, allow_unsafe_werkzeug=True)
+    # Menambahkan host='0.0.0.0' agar server dapat diakses dari perangkat lain di jaringan
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)

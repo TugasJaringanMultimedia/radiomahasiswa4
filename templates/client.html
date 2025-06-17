@@ -65,19 +65,25 @@
   <body>
     <h1>Halaman Client (Pendengar)</h1>
 
-    <div class="live-section">
-      <h2>Siaran Langsung 🎙️</h2>
-      {% if live_broadcast %}
-      <div id="live-status">
-        Sedang berlangsung:
+    <h2>Siaran Langsung</h2>
+    <div id="live-broadcast">
+      <p id="live-status">
+        {% if live_broadcast %} Sedang berlangsung:
         <span id="live-title">{{ live_broadcast.title }}</span>
-      </div>
-      <audio id="livePlayer" controls></audio>
-      {% else %}
-      <div id="live-status">Tidak ada siaran langsung saat ini.</div>
-      <audio id="livePlayer" controls style="display: none"></audio>
-      {% endif %}
+        {% else %} Tidak ada siaran langsung saat ini. {% endif %}
+      </p>
+      <audio
+        id="livePlayer"
+        style="width: 100%; {% if not live_broadcast %}display: none;{% endif %}"
+      ></audio>
+      <button
+        id="btnPlayLive"
+        style="display: none; margin-top: 10px; padding: 10px; font-size: 16px"
+      >
+        ▶️ Dengarkan Langsung
+      </button>
     </div>
+    <hr />
 
     <div class="archive-section">
       <h2>Arsip Rekaman 📂</h2>

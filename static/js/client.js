@@ -6,11 +6,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchBox = document.getElementById("searchBox");
   const sortOptions = document.getElementById("sortOptions");
   const archiveList = document.getElementById("archive-list");
+  const btnPlayLive = document.getElementById("btnPlayLive"); // Ambil tombol baru
 
   let mediaSource;
   let sourceBuffer;
   let audioQueue = [];
 
+  // ... (fungsi setupLivePlayer, onSourceOpen, formatDuration tidak berubah) ...
   function setupLivePlayer() {
     if (!mediaSource || mediaSource.readyState === "closed") {
       try {
@@ -54,7 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const formatDuration = (seconds) => {
-    // --- PERBAIKAN: Lebih robust untuk nilai non-numerik atau negatif ---
     if (
       seconds === null ||
       seconds === undefined ||
@@ -81,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
     archiveList.innerHTML = "";
     if (results.length > 0) {
       results.forEach((b) => {
-        console.log("Data arsip diterima:", b); // Tambahkan ini untuk debugging
+        console.log("Data arsip diterima:", b);
         archiveList.innerHTML += `
                   <div class="archive-item">
                     <div class="archive-info">
@@ -104,6 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   socket.on("live_audio", (chunk) => {
+    // ... (Fungsi ini tidak perlu diubah) ...
     if (!sourceBuffer) {
       console.warn("SourceBuffer belum siap untuk live_audio.");
       audioQueue.push(new Uint8Array(chunk).buffer);
@@ -113,12 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (mediaSource.readyState === "open" && !sourceBuffer.updating) {
       try {
         sourceBuffer.appendBuffer(arrayBuffer);
-        // Coba putar jika belum
-        if (livePlayer.paused) {
-          livePlayer
-            .play()
-            .catch((e) => console.log("Live player auto-play prevented:", e));
-        }
       } catch (e) {
         audioQueue.push(arrayBuffer);
         console.error("Error appending buffer, queuing...:", e);
@@ -128,19 +124,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // --- PERBAIKAN UTAMA UNTUK MOBILE ---
   socket.on("broadcast_started", (data) => {
     console.log("Sinyal 'broadcast_started' diterima:", data.title);
     liveStatus.innerHTML = 'Sedang berlangsung: <span id="live-title"></span>';
     document.getElementById("live-title").textContent = data.title;
+
+    // Tampilkan audio player dan tombol play, jangan langsung memutar
     livePlayer.style.display = "block";
+    livePlayer.controls = true; // Tampilkan kontrol bawaan audio player
+    btnPlayLive.style.display = "block"; // Tampilkan tombol play manual kita
+
     setupLivePlayer();
   });
 
+  // Tambahkan event listener untuk tombol play manual
+  btnPlayLive.addEventListener("click", () => {
+    livePlayer.play().catch((e) => console.error("Gagal memutar audio:", e));
+    // Sembunyikan tombol setelah di-klik untuk antarmuka yang lebih bersih
+    btnPlayLive.style.display = "none";
+  });
+
   socket.on("broadcast_stopped", () => {
+    // ... (Fungsi ini tidak perlu diubah, tapi kita pastikan tombol play juga disembunyikan) ...
     console.log("Sinyal 'broadcast_stopped' diterima.");
     liveStatus.textContent = "Tidak ada siaran langsung saat ini.";
     livePlayer.style.display = "none";
     livePlayer.src = "";
+    btnPlayLive.style.display = "none"; // Sembunyikan tombol play saat siaran berhenti
     if (mediaSource && mediaSource.readyState === "open") {
       try {
         mediaSource.endOfStream();
@@ -155,12 +166,12 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(fetchAndRenderArchives, 1000);
   });
 
+  // ... (Sisa kode tidak berubah) ...
   searchBox.addEventListener("input", fetchAndRenderArchives);
   sortOptions.addEventListener("change", fetchAndRenderArchives);
 
   fetchAndRenderArchives();
 
-  // --- PERBAIKAN: Inisiasi live player jika ada siaran langsung saat halaman dimuat ---
   if (
     livePlayer.style.display !== "none" &&
     liveStatus.textContent.includes("Sedang berlangsung")
@@ -168,6 +179,9 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log(
       "Siaran live ditemukan saat memuat halaman. Menyiapkan live player."
     );
+    // Tampilkan tombol play jika halaman di-refresh saat siaran berlangsung
+    btnPlayLive.style.display = "block";
+    livePlayer.controls = true;
     setupLivePlayer();
   }
 });
